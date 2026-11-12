@@ -1,17 +1,15 @@
 
 # 🧠 PromptLab — AI Prompt Playground
 
-An interactive prompt engineering playground
-built using Python and Streamlit.
+An interactive AI prompt engineering playground built using **Python, Streamlit, and Google's Gemini API**.
 
 ## About the Project
 
-PromptLab is a beginner-friendly application
-designed to explore different AI prompting
-techniques through an interactive interface.
+PromptLab is a beginner-friendly application designed to explore different AI prompting techniques through an interactive interface.
 
-This project is being developed step by step
-as part of my AI engineering learning journey.
+The application allows users to experiment with prompts, generate real AI responses, adjust model settings, and analyze token usage.
+
+This project is being developed step by step as part of my AI engineering learning journey.
 
 ## Features
 
@@ -20,65 +18,104 @@ as part of my AI engineering learning journey.
 - Zero-shot prompting
 - Few-shot prompting
 - Role-based prompting
+- Real AI response generation using Google Gemini
+- Temperature adjustment
 - Example prompt templates
-- Demo response generation
+- Input, output, thinking, and total token tracking
 - Experiment history
-- Download responses
+- Download AI-generated responses
 - Clear workspace functionality
+- Gemini API error handling
 
 ## Technologies Used
 
-- Python
-- Streamlit
-- HTML and CSS
-- Git and GitHub
+- **Python** — Application logic
+- **Streamlit** — Interactive web interface
+- **Google Gemini API** — AI response generation
+- **Google GenAI SDK** — Gemini Interactions API integration
+- **Python-dotenv** — Environment variable management
+- **HTML and CSS** — Interface customization
+- **Git and GitHub** — Version control
 
 ## Installation
 
-1. Clone the repository:
+### 1. Clone the Repository
 
-   git clone https://github.com/hasheel8/ai-prompt-playground.git
+```bash
+git clone https://github.com/hasheel8/ai-prompt-playground.git
+```
 
-2. Navigate to the project:
+### 2. Navigate to the Project
 
-   cd ai-prompt-playground
+```bash
+cd ai-prompt-playground
+```
 
-3. Create a virtual environment:
+### 3. Create a Virtual Environment
 
-   python -m venv .venv
+```bash
+python -m venv .venv
+```
 
-4. Activate the environment (Windows):
+### 4. Activate the Environment (Windows PowerShell)
 
-   .venv\Scripts\activate
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
 
-5. Install dependencies:
+### 5. Install Dependencies
 
-   python -m pip install -r requirements.txt
+```bash
+python -m pip install -r requirements.txt
+```
 
-6. Run the application:
+### 6. Configure the Gemini API
 
-   python -m streamlit run app.py
+Create a `.env` file in the project directory and add:
 
-## Current Development Status
+```env
+GEMINI_API_KEY=your_gemini_api_key
+GEMINI_MODEL=gemini-3.5-flash-lite
+```
 
-### Milestone 1 — Project Setup
-Completed
+You can obtain your API key from [Google AI Studio](https://aistudio.google.com/).
 
-### Milestone 2 — Interactive UI
-Completed
+> **Important:** Keep your `.env` file private. Never commit your Gemini API key to GitHub.
 
-### Milestone 3 — Real AI Integration
-Planned
+### 7. Run the Application
+
+```bash
+python -m streamlit run app.py
+```
+
+Open the local URL displayed in your terminal, usually `http://localhost:8501`.
+
+## How It Works
+
+1. Enter a custom prompt or select an example.
+2. Choose a prompting technique.
+3. Adjust the temperature setting.
+4. Click **Generate Response**.
+5. Gemini generates a real AI response.
+6. View the response and token usage.
+7. Review previous experiments in the Experiment History section.
 
 ## Important Note
 
-The application currently operates in Demo Mode.
+PromptLab generates **real AI responses** using Google's Gemini API.
 
-Responses demonstrate prompting concepts.
-No real AI API is connected yet.
+The application currently uses **Gemini 3.5 Flash Lite** as its default model.
+
+An active internet connection and a valid Gemini API key are required.
+
+Experiment history is stored in the current Streamlit session and is not permanently saved.
 
 ## Developer
 
-Dhanusha Hasheel
+**Dhanusha Hasheel**
 
-GitHub: https://github.com/hasheel8
+GitHub: [hasheel8](https://github.com/hasheel8)
+
+---
+
+*Built as part of my AI engineering learning journey.*
