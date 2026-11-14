@@ -208,7 +208,7 @@ Individual comparisons are experiments, not standardized model benchmarks.
 
 **Dhanusha Hasheel**
 
-GitHub: [hasheel8](https://github.com/hasheel18)
+GitHub: [hasheel18](https://github.com/hasheel18)
 
 Project Repository: [PromptLab — AI Prompt Playground](https://github.com/hasheel18/ai-prompt-playground)
 
