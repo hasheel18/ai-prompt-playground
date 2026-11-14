@@ -70,7 +70,7 @@ The application currently runs locally. A publicly accessible live demo will be 
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/hasheel8/ai-prompt-playground.git
+git clone https://github.com/hasheel18/ai-prompt-playground.git
 ```
 
 ### 2. Navigate to the Project
@@ -208,7 +208,7 @@ Individual comparisons are experiments, not standardized model benchmarks.
 
 **Dhanusha Hasheel**
 
-GitHub: [hasheel8](https://github.com/hasheel8)
+GitHub: [hasheel8](https://github.com/hasheel18)
 
 Project Repository: [PromptLab — AI Prompt Playground](https://github.com/hasheel18/ai-prompt-playground)
 
