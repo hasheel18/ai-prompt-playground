@@ -1,5 +1,6 @@
 
 import os
+import time
 from datetime import datetime
 
 import streamlit as st
@@ -26,17 +27,43 @@ st.set_page_config(
 
 load_dotenv()
 
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+def get_config_value(key, default=None):
+    """
+    Read configuration from environment variables
+    or Streamlit Cloud secrets.
+    """
 
-GEMINI_MODEL = os.getenv(
+    value = os.getenv(key)
+
+    if value:
+        return value
+
+    try:
+        return st.secrets.get(key, default)
+    except (FileNotFoundError, KeyError):
+        return default
+
+GEMINI_API_KEY = get_config_value("GEMINI_API_KEY")
+
+GEMINI_MODEL = get_config_value(
     "GEMINI_MODEL",
     "gemini-3.5-flash-lite"
 )
 
+AVAILABLE_MODELS = [
+    "gemini-3.5-flash-lite",
+    "gemini-3.5-flash",
+    "gemini-3.8-flash",
+]
+
+if GEMINI_MODEL not in AVAILABLE_MODELS:
+    AVAILABLE_MODELS.insert(0, GEMINI_MODEL)
+
 if not GEMINI_API_KEY:
     st.error(
         "Gemini API key not found. "
-        "Please check your .env file."
+        "Please configure GEMINI_API_KEY in your "
+        ".env file or Streamlit secrets."
     )
     st.stop()
 
@@ -63,7 +90,6 @@ def create_gemini_client(api_key):
 
 client = create_gemini_client(GEMINI_API_KEY)
 
-
 # ==========================================
 # 3. SESSION STATE
 # ==========================================
@@ -82,6 +108,15 @@ if "last_model" not in st.session_state:
 
 if "prompt_input" not in st.session_state:
     st.session_state.prompt_input = ""
+
+if "response_time" not in st.session_state:
+    st.session_state.response_time = 0.0
+
+if "comparison_results" not in st.session_state:
+    st.session_state.comparison_results = []
+
+if "generation_mode" not in st.session_state:
+    st.session_state.generation_mode = "Single Model"
 
 if "token_usage" not in st.session_state:
     st.session_state.token_usage = {
@@ -184,7 +219,6 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-
 # ==========================================
 # 5. PROMPT ENGINEERING FUNCTIONS
 # ==========================================
@@ -233,39 +267,39 @@ examples, and well-organized answers.
 User request:
 {prompt}
 """
-
     return prompt
 
-
-def generate_ai_response(prompt, technique, temperature):
+def generate_ai_response(prompt, technique, temperature, model):
     """
-    Generate a response using the
-    Gemini Interactions API.
+    Generate a response using the selected Gemini model.
 
     Returns:
         response_text
         token_usage dictionary
+        response_time in seconds
     """
 
-    final_prompt = build_prompt(
-        prompt,
-        technique
-    )
+    final_prompt = build_prompt(prompt, technique)
+
+    start_time = time.perf_counter()
 
     interaction = client.interactions.create(
-        model=GEMINI_MODEL,
+        model=model,
         input=final_prompt,
         generation_config={
             "temperature": temperature,
-            "max_output_tokens": 1024
+            "max_output_tokens": 4096
         }
     )
 
+    response_time = time.perf_counter() - start_time
+
     if interaction.status != "completed":
         raise RuntimeError(
-            "Gemini interaction did not complete. "
-            f"Status: {interaction.status}"
-        )
+        f"Gemini interaction did not complete. "
+        f"Status: {interaction.status}. "
+        f"Details: {getattr(interaction, 'error', None)}"
+    )
 
     response_text = interaction.output_text
 
@@ -291,9 +325,7 @@ def generate_ai_response(prompt, technique, temperature):
             getattr(usage, "total_tokens", 0) or 0
         )
     }
-
-    return response_text, token_usage
-
+    return response_text, token_usage, response_time
 
 # ==========================================
 # 6. WORKSPACE HELPER FUNCTIONS
@@ -301,16 +333,16 @@ def generate_ai_response(prompt, technique, temperature):
 
 def clear_workspace():
     """
-    Clear the current prompt, response,
-    and token usage.
-
-    Experiment history is preserved.
+    Clear the current workspace while
+    preserving experiment history.
     """
 
     st.session_state.prompt_input = ""
     st.session_state.response = ""
     st.session_state.last_technique = ""
     st.session_state.last_model = ""
+    st.session_state.response_time = 0.0
+    st.session_state.comparison_results = []
 
     st.session_state.token_usage = {
         "input_tokens": 0,
@@ -339,6 +371,7 @@ def clear_history():
     st.session_state.history = []
 
 
+
 # ==========================================
 # 7. SIDEBAR
 # ==========================================
@@ -361,11 +394,39 @@ with st.sidebar:
         ]
     )
 
-    model = st.selectbox(
-        "AI Model",
-        [GEMINI_MODEL]
+    generation_mode = st.radio(
+        "Generation Mode",
+        ["Single Model", "Compare Models"],
+        key="generation_mode"
     )
 
+    if generation_mode == "Single Model":
+
+        model = st.selectbox(
+            "AI Model",
+            AVAILABLE_MODELS,
+            index=AVAILABLE_MODELS.index(GEMINI_MODEL)
+        )
+
+        comparison_models = []
+
+    else:
+
+        model = None
+
+        comparison_models = st.multiselect(
+            "Select Two Models",
+            AVAILABLE_MODELS,
+            default=AVAILABLE_MODELS[:2],
+            max_selections=2
+        )
+
+        st.caption(
+            "Compare two models using the same "
+            "prompt, technique, and temperature."
+        )
+
+    # Available in BOTH generation modes
     temperature = st.slider(
         "Temperature",
         min_value=0.0,
@@ -408,8 +469,7 @@ with st.sidebar:
         "Streamlit's top-right menu."
     )
 
-    st.caption("PromptLab v0.3")
-
+    st.caption("PromptLab v0.4")
 
 # ==========================================
 # 8. HERO SECTION
@@ -534,7 +594,6 @@ with st.container(border=True):
             on_click=clear_workspace
         )
 
-
 # ==========================================
 # 11. RESPONSE GENERATION
 # ==========================================
@@ -544,50 +603,113 @@ if generate:
     if not prompt.strip():
         st.warning("Please enter a prompt.")
 
+    elif (
+        generation_mode == "Compare Models"
+        and len(comparison_models) != 2
+    ):
+        st.warning("Please select exactly two models.")
+
     else:
+
         try:
 
-            with st.spinner(
-                "Gemini is generating your response..."
-            ):
+            if generation_mode == "Single Model":
 
-                response, token_usage = generate_ai_response(
-                    prompt,
-                    technique,
-                    temperature
-                )
+                with st.spinner(
+                    f"{model} is generating your response..."
+                ):
 
-            # Save response to session state
-            st.session_state.response = response
-            st.session_state.last_technique = technique
-            st.session_state.last_model = GEMINI_MODEL
+                    response, token_usage, response_time = (
+                        generate_ai_response(
+                            prompt,
+                            technique,
+                            temperature,
+                            model
+                        )
+                    )
 
-            # Save token usage
-            st.session_state.token_usage = token_usage
+                st.session_state.response = response
+                st.session_state.last_technique = technique
+                st.session_state.last_model = model
+                st.session_state.token_usage = token_usage
+                st.session_state.response_time = response_time
+                st.session_state.comparison_results = []
 
-            # Save experiment
-            experiment = {
-                "prompt": prompt,
-                "technique": technique,
-                "response": response,
-                "temperature": temperature,
-                "model": GEMINI_MODEL,
-                "time": datetime.now().strftime(
-                    "%Y-%m-%d %H:%M:%S"
-                ),
-                "token_usage": token_usage
-            }
+                st.session_state.history.append({
+                    "mode": "Single Model",
+                    "prompt": prompt,
+                    "technique": technique,
+                    "response": response,
+                    "temperature": temperature,
+                    "model": model,
+                    "response_time": response_time,
+                    "time": datetime.now().strftime(
+                        "%Y-%m-%d %H:%M:%S"
+                    ),
+                    "token_usage": token_usage
+                })
 
-            st.session_state.history.append(
-                experiment
-            )
+            else:
+
+                results = []
+
+                # Reset previous results before comparison
+                st.session_state.response = ""
+                st.session_state.comparison_results = []
+
+                for selected_model in comparison_models:
+
+                    with st.spinner(
+                        f"Generating with {selected_model}..."
+                    ):
+
+                        try:
+
+                            response, usage, elapsed = (
+                                generate_ai_response(
+                                    prompt,
+                                    technique,
+                                    temperature,
+                                    selected_model
+                                )
+                            )
+
+                            results.append({
+                                "model": selected_model,
+                                "response": response,
+                                "token_usage": usage,
+                                "response_time": elapsed,
+                                "error": None
+                            })
+
+                        except Exception as model_error:
+
+                            results.append({
+                                "model": selected_model,
+                                "response": "",
+                                "token_usage": None,
+                                "response_time": None,
+                                "error": str(model_error)
+                            })
+
+                st.session_state.comparison_results = results
+
+                st.session_state.history.append({
+                    "mode": "Compare Models",
+                    "prompt": prompt,
+                    "technique": technique,
+                    "temperature": temperature,
+                    "time": datetime.now().strftime(
+                        "%Y-%m-%d %H:%M:%S"
+                    ),
+                    "results": results
+                })
 
         except errors.ClientError as error:
 
             if error.code == 429:
                 st.error(
-                    "Gemini's request limit has been "
-                    "reached. Please wait and try again."
+                    "Gemini's request limit has been reached."
                 )
 
             elif error.code in (400, 404):
@@ -597,9 +719,7 @@ if generate:
                 )
 
             else:
-                st.error(
-                    "Gemini API request failed."
-                )
+                st.error("Gemini API request failed.")
 
             st.caption(str(error))
 
@@ -607,26 +727,19 @@ if generate:
 
             if error.code in (503, 504):
                 st.error(
-                    "Gemini is currently busy or "
-                    "taking too long to respond. "
+                    "Gemini is busy or taking too long. "
                     "Please try again later."
                 )
 
             else:
-                st.error(
-                    "Gemini experienced a server error."
-                )
+                st.error("Gemini experienced a server error.")
 
             st.caption(str(error))
 
         except Exception as error:
 
-            st.error(
-                "Failed to generate an AI response."
-            )
-
+            st.error("Failed to generate an AI response.")
             st.caption(str(error))
-
 
 # ==========================================
 # 12. RESPONSE WORKSPACE
@@ -652,6 +765,11 @@ with st.container(border=True):
         st.caption(
             "Generated using "
             + st.session_state.last_model
+        )
+
+        st.metric(
+            "Response Time",
+            f"{st.session_state.response_time:.2f} seconds"
         )
 
         # Display the generated response
@@ -719,6 +837,154 @@ with st.container(border=True):
             "after generating a prompt."
         )
 
+# ==========================================
+# MODEL COMPARISON WORKSPACE
+# ==========================================
+
+if st.session_state.comparison_results:
+
+    st.write("")
+
+    st.markdown(
+        '<div class="section-heading">'
+        '⚖️ AI Model Comparison'
+        '</div>',
+        unsafe_allow_html=True
+    )
+
+    st.caption(
+        "Compare AI responses, generation times, "
+        "and token usage side by side."
+    )
+
+    results = st.session_state.comparison_results
+
+    columns = st.columns(2)
+
+    for column, result in zip(columns, results):
+
+        with column:
+
+            with st.container(border=True):
+
+                st.subheader(result["model"])
+
+                if result["error"]:
+
+                    st.error("Model request failed.")
+                    st.caption(result["error"])
+
+                else:
+
+                    st.success("Response generated!")
+
+                    st.markdown(result["response"])
+
+                    st.divider()
+
+                    st.metric(
+                        "Response Time",
+                        f"{result['response_time']:.2f} s"
+                    )
+
+                    usage = result["token_usage"]
+
+                    metric1, metric2 = st.columns(2)
+
+                    with metric1:
+
+                        st.metric(
+                            "Input Tokens",
+                            usage["input_tokens"]
+                        )
+
+                        st.metric(
+                            "Thinking Tokens",
+                            usage["thinking_tokens"]
+                        )
+
+                    with metric2:
+
+                        st.metric(
+                            "Output Tokens",
+                            usage["output_tokens"]
+                        )
+
+                        st.metric(
+                            "Total Tokens",
+                            usage["total_tokens"]
+                        )
+
+                    st.download_button(
+                        "⬇️ Download Response",
+                        data=result["response"],
+                        file_name=(
+                            f"{result['model']}_response.md"
+                        ),
+                        mime="text/markdown",
+                        key=f"download_{result['model']}"
+                    )
+
+    # Performance comparison table
+
+    st.subheader("📊 Performance Comparison")
+
+    comparison_data = []
+
+    for result in results:
+
+        if result["error"]:
+            continue
+
+        usage = result["token_usage"]
+
+        comparison_data.append({
+            "Model": result["model"],
+            "Response Time (s)": round(
+                result["response_time"], 2
+            ),
+            "Input Tokens": usage["input_tokens"],
+            "Output Tokens": usage["output_tokens"],
+            "Thinking Tokens": usage["thinking_tokens"],
+            "Total Tokens": usage["total_tokens"]
+        })
+
+    if comparison_data:
+
+        st.dataframe(
+            comparison_data,
+            use_container_width=True,
+            hide_index=True
+        )
+
+    if len(comparison_data) == 2:
+
+        first, second = comparison_data
+
+        if (
+            first["Response Time (s)"]
+            < second["Response Time (s)"]
+        ):
+            faster_model = first["Model"]
+
+        elif (
+            second["Response Time (s)"]
+            < first["Response Time (s)"]
+        ):
+            faster_model = second["Model"]
+
+        else:
+            faster_model = "Both models were equally fast"
+
+        st.info(
+            f"⚡ Faster in this test: {faster_model}"
+        )
+
+    st.caption(
+        "Results reflect individual API requests. "
+        "Network conditions, server load, and output "
+        "length can affect response times."
+    )
 
 # ==========================================
 # 13. EXPERIMENT HISTORY
@@ -734,8 +1000,7 @@ st.markdown(
 )
 
 st.caption(
-    "Review the experiments completed "
-    "during this session."
+    "Review experiments completed during this session."
 )
 
 if st.session_state.history:
@@ -748,9 +1013,11 @@ if st.session_state.history:
 
         experiment_number = total - index
 
+        mode = item.get("mode", "Single Model")
+
         title = (
             f"Experiment {experiment_number} | "
-            f"{item['technique']} | "
+            f"{mode} | "
             f"{item['time']}"
         )
 
@@ -762,33 +1029,68 @@ if st.session_state.history:
             st.markdown("**Technique**")
             st.write(item["technique"])
 
-            st.markdown("**Model**")
-            st.write(
-                item.get("model", GEMINI_MODEL)
-            )
-
             st.markdown("**Temperature**")
             st.write(item["temperature"])
 
-            st.markdown("**AI Response**")
-            st.markdown(item["response"])
+            if mode == "Single Model":
 
-            st.markdown("**Token Usage**")
+                st.markdown("**Model**")
+                st.write(item.get("model", GEMINI_MODEL))
 
-            usage = item.get("token_usage")
+                st.markdown("**AI Response**")
+                st.markdown(item["response"])
 
-            if usage:
-                st.write(
-                    f"Input: {usage.get('input_tokens', 0)} | "
-                    f"Output: {usage.get('output_tokens', 0)} | "
-                    f"Thinking: {usage.get('thinking_tokens', 0)} | "
-                    f"Total: {usage.get('total_tokens', 0)}"
-                )
+                response_time = item.get("response_time")
+
+                if response_time is not None:
+
+                    st.write(
+                        f"Response Time: "
+                        f"{response_time:.2f} seconds"
+                    )
+
+                usage = item.get("token_usage")
+
+                if usage:
+
+                    st.markdown("**Token Usage**")
+
+                    st.write(
+                        f"Input: {usage.get('input_tokens', 0)} | "
+                        f"Output: {usage.get('output_tokens', 0)} | "
+                        f"Thinking: {usage.get('thinking_tokens', 0)} | "
+                        f"Total: {usage.get('total_tokens', 0)}"
+                    )
+
             else:
-                st.caption(
-                    "Token usage was not recorded "
-                    "for this experiment."
-                )
+
+                for result in item.get("results", []):
+
+                    st.markdown(
+                        f"### {result['model']}"
+                    )
+
+                    if result["error"]:
+
+                        st.error(result["error"])
+
+                    else:
+
+                        st.markdown(result["response"])
+
+                        st.write(
+                            "Response Time: "
+                            f"{result['response_time']:.2f} seconds"
+                        )
+
+                        usage = result["token_usage"]
+
+                        st.write(
+                            f"Input: {usage['input_tokens']} | "
+                            f"Output: {usage['output_tokens']} | "
+                            f"Thinking: {usage['thinking_tokens']} | "
+                            f"Total: {usage['total_tokens']}"
+                        )
 
     st.button(
         "🗑️ Clear History",
@@ -798,11 +1100,11 @@ if st.session_state.history:
 else:
 
     with st.container(border=True):
+
         st.caption(
             "No experiments yet. "
             "Your history will appear here."
         )
-
 
 # ==========================================
 # 14. FOOTER
@@ -813,7 +1115,7 @@ st.divider()
 st.markdown("""
 <div class="footer">
 Developed by Dhanusha Hasheel
-| PromptLab v0.3
+| PromptLab v0.4
 | AI Prompt Engineering Project
 </div>
 """, unsafe_allow_html=True)

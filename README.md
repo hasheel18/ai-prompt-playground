@@ -1,43 +1,71 @@
 
 # 🧠 PromptLab — AI Prompt Playground
 
-An interactive AI prompt engineering playground built using **Python, Streamlit, and Google's Gemini API**.
+An interactive AI prompt engineering playground built with **Python, Streamlit, and Google's Gemini API**.
 
-## About the Project
+Experiment with prompting techniques, compare AI models, and analyze their responses and performance.
 
-PromptLab is a beginner-friendly application designed to explore different AI prompting techniques through an interactive interface.
+## 🚀 About the Project
 
-The application allows users to experiment with prompts, generate real AI responses, adjust model settings, and analyze token usage.
+PromptLab is an interactive application designed to explore how different prompting techniques and AI models affect generated responses.
 
-This project is being developed step by step as part of my AI engineering learning journey.
+Users can create prompts, experiment with model settings, compare AI-generated outputs, and analyze response times and token usage through a beginner-friendly interface.
 
-## Features
+This project was developed as part of my AI engineering learning journey, with a focus on understanding prompt engineering, AI model integration, and performance evaluation.
 
-- Modern Streamlit interface
-- Light and Dark theme support
+## ✨ Features
+
+### 🧠 Prompt Engineering
 - Zero-shot prompting
 - Few-shot prompting
 - Role-based prompting
-- Real AI response generation using Google Gemini
-- Temperature adjustment
-- Example prompt templates
-- Input, output, thinking, and total token tracking
-- Experiment history
-- Download AI-generated responses
-- Clear workspace functionality
+- Custom prompts and example templates
+- Adjustable temperature settings
+
+### 🤖 AI Model Integration
+- Real AI response generation using Google's Gemini API
+- Single Model generation mode
+- Support for multiple Gemini models
+- Gemini 3.5 Flash Lite and Gemini 3.5 Flash
 - Gemini API error handling
 
-## Technologies Used
+### ⚖️ AI Model Comparison
+- Compare two AI models using the same prompt
+- Side-by-side AI-generated responses
+- Response time measurement
+- Input token tracking
+- Output token tracking
+- Thinking token tracking
+- Total token tracking
+- Performance comparison table
 
-- **Python** — Application logic
-- **Streamlit** — Interactive web interface
-- **Google Gemini API** — AI response generation
-- **Google GenAI SDK** — Gemini Interactions API integration
-- **Python-dotenv** — Environment variable management
-- **HTML and CSS** — Interface customization
-- **Git and GitHub** — Version control
+### 🎨 User Interface
+- Modern Streamlit interface
+- Light and dark theme support
+- Interactive configuration sidebar
+- Download AI-generated responses
+- Clear workspace functionality
+- Session-based experiment history
 
-## Installation
+## 🛠️ Technologies Used
+
+| Technology | Purpose |
+|------------|---------|
+| Python | Application logic |
+| Streamlit | Interactive web interface |
+| Google Gemini API | AI response generation |
+| Google GenAI SDK | Gemini Interactions API integration |
+| Python-dotenv | Environment variable management |
+| HTML & CSS | Interface customization |
+| Git & GitHub | Version control |
+
+## 🌐 Live Demo
+
+**Coming Soon — Streamlit Community Cloud Deployment**
+
+The application currently runs locally. A publicly accessible live demo will be added after deployment.
+
+## ⚙️ Installation
 
 ### 1. Clone the Repository
 
@@ -57,7 +85,9 @@ cd ai-prompt-playground
 python -m venv .venv
 ```
 
-### 4. Activate the Environment (Windows PowerShell)
+### 4. Activate the Environment
+
+**Windows PowerShell:**
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
@@ -71,16 +101,16 @@ python -m pip install -r requirements.txt
 
 ### 6. Configure the Gemini API
 
-Create a `.env` file in the project directory and add:
+Create a `.env` file in the project directory:
 
 ```env
 GEMINI_API_KEY=your_gemini_api_key
 GEMINI_MODEL=gemini-3.5-flash-lite
 ```
 
-You can obtain your API key from [Google AI Studio](https://aistudio.google.com/).
+Get your API key from [Google AI Studio](https://aistudio.google.com/).
 
-> **Important:** Keep your `.env` file private. Never commit your Gemini API key to GitHub.
+> **Important:** Never commit your `.env` file or expose your Gemini API key publicly.
 
 ### 7. Run the Application
 
@@ -88,33 +118,99 @@ You can obtain your API key from [Google AI Studio](https://aistudio.google.com/
 python -m streamlit run app.py
 ```
 
-Open the local URL displayed in your terminal, usually `http://localhost:8501`.
+Open the local URL displayed in the terminal, usually:
 
-## How It Works
+http://localhost:8501
+
+## 💡 How It Works
+
+### Single Model Mode
 
 1. Enter a custom prompt or select an example.
 2. Choose a prompting technique.
-3. Adjust the temperature setting.
-4. Click **Generate Response**.
-5. Gemini generates a real AI response.
-6. View the response and token usage.
-7. Review previous experiments in the Experiment History section.
+3. Select a Gemini model.
+4. Adjust the temperature.
+5. Click **Generate Response**.
+6. View the AI-generated response, response time, and token usage.
+7. Download the response or review it in Experiment History.
 
-## Important Note
+### Compare Models Mode
 
-PromptLab generates **real AI responses** using Google's Gemini API.
+1. Select **Compare Models** in the sidebar.
+2. Choose two Gemini models.
+3. Enter a prompt and select a prompting technique.
+4. Adjust the temperature setting.
+5. Click **Generate Response**.
+6. View both AI-generated responses side by side.
+7. Compare response times and token usage in the performance table.
+8. Review the comparison in Experiment History.
 
-The application currently uses **Gemini 3.5 Flash Lite** as its default model.
+Both models receive the same constructed prompt and temperature setting, allowing users to explore differences in their responses and performance.
 
-An active internet connection and a valid Gemini API key are required.
+## 📊 Model Comparison
 
-Experiment history is stored in the current Streamlit session and is not permanently saved.
+PromptLab supports comparing Gemini models using response time and token usage metrics.
 
-## Developer
+For example:
+
+| Metric | Gemini 3.5 Flash | Gemini 3.5 Flash Lite |
+|--------|------------------|----------------------|
+| Response Time | Measured in seconds | Measured in seconds |
+| Input Tokens | Tracked | Tracked |
+| Output Tokens | Tracked | Tracked |
+| Thinking Tokens | Tracked | Tracked |
+| Total Tokens | Tracked | Tracked |
+
+Performance results vary depending on the prompt, model behavior, network conditions, and server availability.
+
+Individual comparisons are experiments, not standardized model benchmarks.
+
+
+## 🧩 Project Milestones
+
+- [x] **Milestone 1 — Project Setup and Interface**
+  - Streamlit application setup
+  - Modern user interface
+  - Prompt input workspace
+
+- [x] **Milestone 2 — Prompt Engineering**
+  - Zero-shot prompting
+  - Few-shot prompting
+  - Role-based prompting
+  - Example prompt templates
+
+- [x] **Milestone 3 — Gemini API Integration**
+  - Real AI response generation
+  - Temperature configuration
+  - Token usage tracking
+  - Experiment history
+  - Response downloads
+
+- [x] **Milestone 4 — AI Model Comparison**
+  - Multiple Gemini model selection
+  - Side-by-side response comparison
+  - Response time tracking
+  - Token usage comparison
+  - Performance analysis
+  
+
+## 📌 Important Notes
+
+- PromptLab generates **real AI responses** using Google's Gemini API.
+- The default model is **Gemini 3.5 Flash Lite**.
+- Model availability depends on Gemini API access and server conditions.
+- An internet connection and a valid Gemini API key are required.
+- Experiment history is stored only in the current Streamlit session.
+- Model comparisons generate separate API requests and may consume additional API quota.
+- Public deployment requires securely configured API credentials and appropriate usage limits.
+
+## 👨‍💻 Developer
 
 **Dhanusha Hasheel**
 
 GitHub: [hasheel8](https://github.com/hasheel8)
+
+Project Repository: [PromptLab — AI Prompt Playground](https://github.com/hasheel8/ai-prompt-playground)
 
 ---
 
